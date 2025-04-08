@@ -1,4 +1,4 @@
-{ "name": "ogi",
+{ "name": "nft-role-bot",
   "scripts": {
     "start": "npx ts-node src/index.ts"
   },
