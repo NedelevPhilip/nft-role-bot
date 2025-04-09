@@ -1,39 +1,31 @@
-import { Contract, JsonRpcProvider } from "ethers";
-import * as dotenv from "dotenv";
-import { NFTContract } from "./types";
+interface NFTResponse {
+	nfts: string[]; // list of NFT identifiers
+}
 
-dotenv.config();
-
-const provider = new JsonRpcProvider(process.env.RPC_URL);
-
-const contracts: NFTContract[] = [
-	{
-		address: process.env.NFT_CONTRACT_1!,
-		role: "Holder",
-		abi: ["function balanceOf(address owner) view returns (uint256)"]
-	},
-	{
-		address: process.env.NFT_CONTRACT_2!,
-		role: "VIP",
-		abi: ["function balanceOf(address owner) view returns (uint256)"]
-	},
-	{
-		address: process.env.NFT_CONTRACT_3!,
-		role: "OG",
-		abi: ["function balanceOf(address owner) view returns (uint256)"]
-	}
-];
+const roleMapping: Record<string, string[]> = {
+	"VIP-NFT": ["VIP"],
+	"OG-PASS": ["OG"],
+};
 
 export async function checkNFTRoles(wallet: string): Promise<string[]> {
-	const roles: string[] = [];
+	console.log(`Mock fetch NFTs for wallet: ${wallet}`);
 
-	for (const contract of contracts) {
-		const nftContract = new Contract(contract.address, contract.abi, provider);
-		const balance = await nftContract.balanceOf(wallet);
-		if (balance > 0n) {
-			roles.push(contract.role);
+	// Mocked response from external API
+	const mockNFTs: Record<string, string[]> = {
+		"0x85D65f607c59A09F43d88999B7A0B43f55Eb18D8": ["VIP-NFT"],
+		"0x123...": ["OG-PASS"],
+		"0x43fcCdE584991D1BEEbf79620279b997378687dc": ["VIP-NFT", "OG-PASS"]
+	};
+
+	const userNFTs = mockNFTs[wallet.toLowerCase()] || [];
+
+	const roles = new Set<string>();
+	for (const nft of userNFTs) {
+		const mappedRoles = roleMapping[nft];
+		if (mappedRoles) {
+			mappedRoles.forEach(role => roles.add(role));
 		}
 	}
 
-	return roles;
+	return Array.from(roles);
 }

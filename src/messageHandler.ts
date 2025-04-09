@@ -7,14 +7,14 @@ export async function handleMessage(client: Client, message: Message) {
 
 	const [, wallet] = message.content.split(" ");
 	if (!wallet || !isAddress(wallet)) {
-		return message.reply("❌ Невалидный адрес кошелька");
+		return message.reply("❌ Invalid wallet address");
 	}
 
 	try {
 		const roles = await checkNFTRoles(wallet);
 
 		if (roles.length === 0) {
-			return message.reply("❌ У вас нет нужных NFT для доступа");
+			return message.reply("❌ You don't own any required NFTs");
 		}
 
 		for (const roleName of roles) {
@@ -24,9 +24,9 @@ export async function handleMessage(client: Client, message: Message) {
 			}
 		}
 
-		return message.reply(`✅ Вам назначены роли: ${roles.join(", ")}`);
+		return message.reply(`✅ Roles assigned: ${roles.join(", ")}`);
 	} catch (error) {
-		console.error("Ошибка при проверке NFT:", error);
-		message.reply("⚠️ Произошла ошибка при проверке. Попробуйте позже.");
+		console.error("Error checking NFT roles:", error);
+		message.reply("⚠️ An error occurred while checking your NFTs. Please try again later.");
 	}
 }
