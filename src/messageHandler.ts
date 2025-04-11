@@ -1,48 +1,43 @@
-import { Client, Message } from "discord.js";
+import { ChatInputCommandInteraction } from "discord.js";
 import { isAddress } from "ethers";
 import { checkNFTRoles } from "./nftChecker";
+import { GuildMember } from "discord.js";
 
 const allRoleNames = ["VIP", "OG"];
 
-export async function handleMessage(client: Client, message: Message) {
-	if (!message.content.startsWith("!verify") || message.author.bot) return;
+export async function handleMessage(interaction: ChatInputCommandInteraction) {
+	if (interaction.commandName !== "verify") return;
 
-	const [, wallet] = message.content.split(" ");
-	if (!wallet || !isAddress(wallet)) {
-		return message.reply("❌ Invalid wallet address");
+	const wallet = interaction.options.getString("wallet", true);
+
+	if (!isAddress(wallet)) {
+		return interaction.reply({ content: "❌ Invalid wallet address", ephemeral: true });
 	}
 
-	try {
-		const rolesToAssign = await checkNFTRoles(wallet);
+	await interaction.deferReply({ ephemeral: true });
 
-		const member = message.member;
-		if (!member) return;
+	const rolesToAssign = await checkNFTRoles(wallet);
+	const member = interaction.member as GuildMember;
 
-		const guild = message.guild;
-		if (!guild) return;
+	if (!member || !("roles" in member)) return;
 
-		// Remove all managed roles first
-		for (const roleName of allRoleNames) {
-			const role = guild.roles.cache.find(r => r.name === roleName);
-			if (role && member.roles.cache.has(role.id)) {
-				await member.roles.remove(role);
-			}
+	for (const roleName of allRoleNames) {
+		const role = interaction.guild?.roles.cache.find(r => r.name === roleName);
+		if (role && member.roles.cache.has(role.id)) {
+			await member.roles.remove(role);
 		}
-
-		if (rolesToAssign.length === 0) {
-			return message.reply("❌ You don't own any verified NFTs. All NFT-based roles have been removed.");
-		}
-
-		for (const roleName of rolesToAssign) {
-			const role = guild.roles.cache.find(r => r.name === roleName);
-			if (role) {
-				await member.roles.add(role);
-			}
-		}
-
-		return message.reply(`✅ Roles updated: ${rolesToAssign.join(", ")}`);
-	} catch (error) {
-		console.error("Error checking NFT roles:", error);
-		message.reply("⚠️ An error occurred while checking your NFTs. Please try again later.");
 	}
+
+	if (rolesToAssign.length === 0) {
+		return interaction.editReply("✅ You don't own any verified NFTs. All NFT-based roles have been removed.");
+	}
+
+	for (const roleName of rolesToAssign) {
+		const role = interaction.guild?.roles.cache.find(r => r.name === roleName);
+		if (role) {
+			await member.roles.add(role);
+		}
+	}
+
+	return interaction.editReply(`✅ Roles updated: ${rolesToAssign.join(", ")}`);
 }
